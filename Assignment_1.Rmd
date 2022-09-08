@@ -1,0 +1,47 @@
+---
+title: "Assignment_1 - Curtis Meister"
+output: html_document
+date: "2022-09-08"
+---
+## Dataset Used - State Drug Utilization Data 2021:
+https://data.medicaid.gov/dataset/eec7fbe6-c4c4-5915-b3d0-be5828ef4e9d/data?conditions[0][property]=state&conditions[0][value]=OH&conditions[0][operator]=%3D 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+data <- read.csv("~/Desktop/Fundamentals of Machine Learning/Assignment 1/data2.csv")
+```
+
+## Transforming Data by Changing Column Names
+```{r}
+colnames(data)[colnames(data) =="package_size"] <- "Size_Of_Package"
+```
+
+```{r}
+data$state[data$state== "OH"] <- "Ohio"
+```
+
+## Printing Out Descriptive Statistics
+```{r}
+summary(data)
+```
+
+```{r}
+summary(data$number_of_prescriptions)
+```
+
+## Plots
+
+```{r pressure, echo=FALSE}
+plot(data$quarter, data$number_of_prescriptions, main = "Scatterplot", xlab = "Quarter", ylab = "# of Prescriptions")
+```
+
+```{r}
+table <- table (data$utilization_type)
+barplot(table, main="Utilization Type", xlab = "Type", ylab = "Amount")
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
