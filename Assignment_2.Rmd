@@ -1,0 +1,143 @@
+---
+title: "Fundamentals of Machine Learning - Assignment 2"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2022-09-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+bank.df <- read.csv("UniversalBank.csv", header = TRUE)
+dim(bank.df)
+```
+
+```{r}
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(FNN)
+library(psych)
+library(ISLR)
+library(forecast)
+library(class)
+library(tidyr)
+library(datasets)
+```
+
+```{r}
+summary(bank.df)
+str(bank.df)
+names(bank.df)
+```
+
+```{r}
+bank.df$Education <- factor(bank.df$Education, levels = c(1, 2, 3), labels = c("Undergrad", "Graduate", "Advanced"))
+```
+
+```{r}
+df=subset(bank.df, select=-c(1,5))
+
+dumedu <- as.data.frame(dummy.code(bank.df$Education))
+
+df_without_education <- subset(df, select=-c(Education))
+bank_data <- cbind(df_without_education, dumedu)
+head(bank_data)
+bank_data$Personal.Loan = as.factor(bank_data$Personal.Loan)
+bank_data$CCAvg = as.integer(bank_data$CCAvg)
+
+set.seed(1)
+TrainRows <- sample(rownames(bank_data), dim(bank.df)[1]*0.6)
+TrainData = bank_data[TrainRows, ]
+ValidRows <- setdiff(rownames(bank_data), TrainRows)
+ValidData <- bank_data[ValidRows, ]
+
+new.df <- data.frame(Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education1 = 0, Education2 = 1, Education3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1, Credit.Card = 1)
+new.df
+
+train.norm.df <- TrainData
+valid.norm.df <- ValidData
+bank.norm.df <- bank_data
+
+norm.values <- preProcess(TrainData[, -7], method=c("center", "scale"))
+train.norm.df[, -7] <-predict(norm.values, TrainData[, -7])
+valid.norm.df[, -7] <-predict(norm.values, ValidData[, -7])
+bank.norm.df[, -7] <-predict(norm.values, bank_data[, -7])
+
+knn.predictor <- knn(train = train.norm.df[, -7], test = bank.norm.df[, -7], cl = train.norm.df[, 7], k=5, prob=TRUE)
+knn.attributes <- attributes(knn.predictor)
+knn.attributes[1]
+```
+
+```{r}
+accuracy.df <- data.frame(k = seq(1, 14, 1), accuracy = rep(0, 14))
+
+for(i in 1:14) {
+  KNN2 <- knn(train = train.norm.df[ ,-7],test = valid.norm.df[ ,-7], cl = train.norm.df[ ,7], k=i, prob=TRUE)
+  accuracy.df[i, 2] <- confusionMatrix(KNN2, valid.norm.df[ ,7])$overall[1]
+}
+accuracy.df
+```
+2. k=3 is the best choice becuase it is closest to 1
+```{r}
+KNN3 <- knn(train = train.norm.df[ ,-7],test = valid.norm.df[ ,-7], cl = train.norm.df[ ,7], k=3, prob=TRUE)
+confusionMatrix(KNN3, valid.norm.df[ ,7])
+```
+
+```{r}
+newCustomer.df= data.frame(Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities.Account = 0, CD.Account = 0, Online = 1, CreditCard = 1)
+knn.4 <- knn(train = train.norm.df[,-7],test = newCustomer.df, cl = train.norm.df[,7], k=3, prob=TRUE)
+knn.4
+```
+
+Customer will be a 1 as classification.
+
+```{r}
+df=subset(bank.df, select=-c(1,5))
+
+dumedu <- as.data.frame(dummy.code(bank.df$Education))
+
+df_without_education <- subset(df, select=-c(Education))
+bank_data <- cbind(df_without_education, dumedu)
+head(bank_data)
+bank_data$Personal.Loan = as.factor(bank_data$Personal.Loan)
+bank_data$CCAvg = as.integer(bank_data$CCAvg)
+
+set.seed(1)
+train.index <- sample(rownames(bank_data), 0.5*dim(bank.df)[1])
+valid.index <- sample(setdiff(rownames(bank_data),train.index), 0.3*dim(bank.df)[1])
+test.index = setdiff(rownames(bank_data), union(train.index, valid.index))
+
+train.df <- bank_data[train.index, ]
+valid.df <- bank_data[valid.index, ]
+test.df <- bank_data[test.index, ]
+
+norm.values <- preProcess(train.df[, -7], method=c("center", "scale"))
+train.df[, -7] <- predict(norm.values, train.df[, -7])
+valid.df[, -7] <- predict(norm.values, valid.df[, -7])
+test.df[,-7] <- predict(norm.values, test.df[,-7])
+
+TestKNN <- knn(train = train.df[,-7],test = test.df[,-7], cl = train.df[,7], k=3, prob=TRUE)
+ValidKNN <- knn(train = train.df[,-7],test = valid.df[,-7], cl = train.df[,7], k=3, prob=TRUE)
+TrainKNN <- knn(train = train.df[,-7],test = train.df[,-7], cl = train.df[,7], k=3, prob=TRUE)
+
+confusionMatrix(TestKNN, test.df[,7])
+```
+
+```{r}
+confusionMatrix(ValidKNN, valid.df[,7])
+```
+
+```{r}
+confusionMatrix(TrainKNN, train.df[,7])
+```
+Test Set - .962 <br>
+Validation Set - .968 <br>
+Training Set - .978 <br>
+<br>
+As Training Set is closest to 1, it will have the most accuracy. <br>
+Testing Set is furthest from 1, so it will have lowest accuracy. <br>
