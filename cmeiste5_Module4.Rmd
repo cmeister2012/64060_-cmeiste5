@@ -1,0 +1,32 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-09-29"
+---
+
+title: "Quantitative Managment Modeling" 
+output: html_document 
+date: "2022-09-27" 
+--- 
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+``` 
+
+```{r} 
+library(lpSolveAPI)
+library(lpSolve)
+``` 
+
+```{r} 
+x <- read.lp ("PlantSizes.lp")
+x
+```
+
+```{r}
+solve(x)
+get.objective(x)
+get.variables(x)
+get.constraints(x)
+```
