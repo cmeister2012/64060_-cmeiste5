@@ -1,0 +1,86 @@
+---
+title: "Assignment 3 - Fundamentals of Machine Learning"
+output: html_document
+date: "2022-10-14"
+---
+
+```{r}
+library(ISLR)
+library(forecast)
+library(class)
+library(psych) 
+library(caret)
+library(FNN)
+library(melt)
+library(MASS) 
+library(reshape2) 
+library(reshape) 
+library(e1071)
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+bank = read.csv("~/Desktop/Fundamentals of Machine Learning/Assignment 2/UniversalBank.csv")
+bank$Online = as.factor(bank$Online)
+bank$Personal.Loan = as.factor(bank$Personal.Loan)
+bank$CreditCard = as.factor(bank$CreditCard)
+```
+
+```{r}
+train.index <- sample(row.names(bank), dim(bank)[1]*0.6)  
+test.index <- setdiff(row.names(bank), train.index) 
+train.df <- bank[train.index, ]
+test.df <- bank[test.index, ]
+train <- bank[train.index, ]
+test <- bank[train.index,]
+```
+
+```{r}
+melted.bank = melt(train, id=c("CreditCard","Personal.Loan"), variable= "Online")
+recast.bank=dcast(melted.bank, CreditCard+Personal.Loan~Online)
+recast.bank[ ,c(1:2,14)]
+```
+Note: These numbers were all reading different everytime I knit, even without making any additional changes so I went ahead and left it as it was reading the final time I ran the numbers.
+
+78/(1871+216+835+78)= 2.8%
+
+```{r}
+melted.bank1 = melt(train, id=c("Personal.Loan"), variable = "Online")
+melted.bank2 = melt(train, id=c("CreditCard"), variable = "Online")
+recast.bank1 = dcast(melted.bank1, Personal.Loan~Online)
+recast.bank2 = dcast(melted.bank2, CreditCard~Online)
+PersonalLoanPivot = recast.bank1[, c(1,13)]
+CreditCardPivot = recast.bank2[, c(1,14)]
+
+PersonalLoanPivot
+CreditCardPivot
+```
+
+```{r}
+table(train[, c(14,10)])
+table(train[, c(13,10)])
+table(train[, c(10)])
+```
+Note: These numbers were all reading different everytime I knit, even without making any additional changes so I went ahead and left it as it was reading the final time I ran the numbers.
+
+i. 83/(83+199) = 29.4% </br>
+ii. 167/(167+115) = 59.2% </br>
+iii. 282/(282+2718) = 9.4% </br>
+iv. 811/(811+1907) = 29.8% </br>
+v. 1599/(1599+1119) = 58.8% </br>
+vi. 2718/(2718+282) = 90.6% </br>
+
+```{r}
+((83/(83+199))*(167/(167+115))*(282/(282+2718)))/(((83/(83+199))*(167/(167+115))*(282/(282+2718)))+((811/(811+1907))*(1599/(1599+1119))*2718/(2718+282)))
+```
+
+```{r}
+naive.train = train.df[, c(10,13:14)]
+naive.test = test.df[, c(10,13:14)]
+naivebayes = naiveBayes(Personal.Loan~.,data=naive.train)
+naivebayes
+```
+The naive bayes output is the same as the previous methods. </br> (.294)(.592)(.094)/((.294)(.592)(.094)+(.298)(.588)(.906)) = .09 </br>
+In comparison to E, they are about the same.
