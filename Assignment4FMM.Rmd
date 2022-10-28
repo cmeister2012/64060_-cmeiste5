@@ -1,0 +1,143 @@
+---
+title: "Assignment 4 - Fundamentals of Machine Learning"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2022-10-26"
+---
+
+```{r}
+library(ISLR)
+library(forecast)
+library(class)
+library(psych) 
+library(caret)
+library(FNN)
+library(melt)
+library(MASS) 
+library(reshape2) 
+library(reshape) 
+library(e1071)
+library(stats)
+library (dplyr)
+library(ggplot2)
+library(ggfortify)
+library(factoextra)
+library(NbClust)
+library(flexclust)
+library(dendextend)
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+A. 
+```{r}
+rm(list = ls())
+set.seed(1)
+pharmaceutical_data <- read.csv("Pharmaceuticals.csv", header = TRUE)
+row.names(pharmaceutical_data) <- pharmaceutical_data[,2]
+pharmaceutical_data <- pharmaceutical_data[, -c(1,2,12,13,14)]
+pharmaceutical_data.norm <- sapply(pharmaceutical_data, scale)
+
+pharmaceutical_data.norm
+pharmaceutical_data <- pharmaceutical_data.norm
+```
+B.
+```{r}
+pharmaceutical_data <- scale(pharmaceutical_data)
+distance <- get_dist(pharmaceutical_data)
+fviz_dist(distance)
+```
+
+```{r}
+k4 <- kmeans (pharmaceutical_data, centers = 4, nstart = 25)
+k4$centers
+k4$size
+k4$cluster[120]
+fviz_cluster(k4, data = pharmaceutical_data)
+```
+
+```{r}
+set.seed(123)
+k4 = kcca(pharmaceutical_data, k=4, kccaFamily("kmedians"))
+k4
+```
+
+```{r}
+clusters_index <- predict(k4)
+dist(k4@centers)
+image(k4)
+points(pharmaceutical_data, col= clusters_index, pch = 19, cex=.3)
+```
+
+```{r}
+set.seed(123)
+pharmaceutical_data <- Auto[,c(1,6)]
+pharmaceutical_data <- scale (pharmaceutical_data)
+fviz_nbclust(pharmaceutical_data, kmeans, method = "wss")
+```
+
+```{r}
+fviz_nbclust (pharmaceutical_data, kmeans, method = "silhouette")
+```
+
+```{r}
+nc <- NbClust(pharmaceutical_data.norm, distance="euclidean", min.nc=2, max.nc=10, method="average")
+
+table(nc$Best.n[1,])
+
+barplot(table(nc$Best.n[1,]), xlab="Clusters (Amount)", ylab="Criteria (Amount)", main="# of Clusters By Using Criteria")
+d <- dist(pharmaceutical_data.norm)
+```
+
+```{r}
+AverageClust <- hclust(d, method="average")
+
+plot(AverageClust, hang = -1, cex=0.8, main="average linkage clustering")
+
+clusters <- cutree(AverageClust, k=6)
+
+aggregate(pharmaceutical_data.norm, by=list(cluster=clusters), median)
+rect.hclust(AverageClust, k=6)
+
+clust.means <- function(x, res.clust, groups)
+{
+  if(!is.matrix(x))
+    x <- as.matrix(x)
+  means <- tapply(x, list(rep(cutree(res.clust, groups), ncol(x)),
+                          col(x)),
+                  mean)
+  dimnames(means) <- list(NULL, dimnames(x)[[2]])
+  return(as.data.frame(means))
+}
+
+
+PharmaCentroids<-clust.means(pharmaceutical_data.norm, AverageClust, 6)
+
+y<-apply(as.matrix(PharmaCentroids), 2, as.double)
+
+plot(c(0), xaxt = 'n', ylab = "", type = "l", ylim = c(min(y), max(y)), xlim = c(0,9))
+
+axis(1, at = c(1:9), labels = names(pharmaceutical_data))
+
+for (i in c(1:6))
+  lines(y[i,],  lty = i, lwd = 2,
+        col = ifelse(i %in% c(1),"pink",
+                     (ifelse(i %in% c(2),"green",
+                             (ifelse(i %in% c(3),"blue",
+                                     (ifelse(i %in% c(4,5),"black","orange"))))))))
+
+text(x = 0.5, y = PharmaCentroids[, 1], labels = paste("Cluster", c(1:6)))
+```
+
+C.
+I would not necessarily say there is a pattern in the clusters with repsect to the numerical variables. The median recommendation helps us understand if each cluster is a buy, hold or sell. It helps to read the cluster graphs in double checking if you feel these recommendations are reliable.
+
+D. 
+Cluster 1 is our "steady" cluster. It remains mostly in the middle of the graph the entire time.
+Cluster 2 is "Stable but low Profit margin" by having high PE Ratio but low profit margin.
+Cluster 3 is the "high risk, low reward". It shoots up for Beta but takes a dive afterwards.
+Cluster 4 is "high risk, good outcome".
+Cluster 5 is similar to 3. The risk is high but profit is average so it would be called "high risk, medium payout".
+Cluster 6 starts out with the highest market cap and very low risk. It finishes somewhere in the middle range for profit. I'd call this "the chosen cluster".
