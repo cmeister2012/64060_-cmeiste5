@@ -1,0 +1,109 @@
+---
+title: "Fundamentals of Machine Learning - Final Exam"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+date: "2022-11-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library("stats")
+library("factoextra")
+library("cluster")
+library("fpc")
+library("tidyverse")
+library("caret")
+library("corrplot")
+library("ROSE")
+library("Rtsne")
+library("pROC")
+library("dplyr")
+library("caTools")
+library("rpart")
+library("rpart.plot")
+```
+
+```{r}
+rm(list=ls())
+creditcard <- read.csv("creditcard.csv", header = TRUE)
+```
+
+```{r}
+glimpse(creditcard)
+summary(creditcard)
+length(creditcard$Class)
+summary(as.factor(creditcard$Class))
+table(creditcard$Class)
+#V31 is the Class section
+#0 is a legit transaction
+#1 is a fraudulent transaction
+492/284807
+names(creditcard)
+```
+
+```{r}
+colSums(is.na(creditcard))
+summary(creditcard$Amount)
+hist(creditcard$Amount)
+```
+
+```{r}
+GGPlotTheme <- theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+p <- ggplot(creditcard, aes(x = Class)) + geom_bar() + ggtitle("Number of class labels") + GGPlotTheme
+print(p)
+p <- ggplot(creditcard, aes(x = Class, y = Amount)) + geom_boxplot() + ggtitle("Distribution of transaction amount by class") + GGPlotTheme
+print(p)
+```
+
+```{r}
+correlation <- cor(creditcard[, -1], method = "pearson")
+corrplot(correlation, number.cex = 1, method = "color", type = "full", tl.cex=0.7, tl.col="black")
+```
+
+```{r}
+creditcard$Amount <- scale(creditcard$Amount)
+new_data <- creditcard[, -c(1)]
+head(new_data)
+```
+
+```{r}
+new_data$Class <- as.factor(new_data$Class)
+levels(new_data$Class) <- c("Not Fraudulent", "Fraudulent")
+```
+
+```{r}
+set.seed(123)
+split <- sample.split(new_data$Class, SplitRatio = 0.8)
+train_data <- subset(new_data, split == TRUE)
+test_data <- subset(new_data, split == FALSE)
+dim(train_data)
+```
+
+```{r}
+dim(test_data)
+train_data %>% ggplot(aes(x = factor(Class), y = prop.table(stat(count)), fill = factor(Class))) +
+  geom_bar(position = "dodge") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = 'Class', y = 'Percent', title = 'Training Class distributions') +
+  theme_grey()
+```
+
+```{r}
+Logit_Model=glm(Class~.,test_data,family=binomial())
+summary(Logit_Model)
+plot(Logit_Model)
+lr.predict <- predict(Logit_Model,test_data, probability = TRUE)
+auc.gbm = roc(test_data$Class, lr.predict, plot = TRUE, col = "black")
+```
+
+```{r}
+decisionTree <- rpart(Class ~ . , creditcard, method = 'class')
+prediction <- predict(decisionTree, creditcard, type = 'class')
+probability <- predict(decisionTree, creditcard, type = 'prob')
+rpart.plot(decisionTree)
+```
